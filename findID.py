@@ -1,42 +1,45 @@
-import csv
+import configparser
 from googleapiclient.discovery import build
 from googleapiclient.errors import HttpError
 
-# Placeholder for your YouTube Data API v3 key
-# Replace 'YOUR_API_KEY' with your actual API key
-API_KEY = ''
+# Load config from config.ini
+config = configparser.ConfigParser()
+config.read('config.ini')
+API_KEY = config['settings']['api_key']
 
-# Build the YouTube API service
+# Build the YouTube service
 youtube = build('youtube', 'v3', developerKey=API_KEY)
 
 # Read handles from handle.txt
 with open('handle.txt', 'r') as file:
-    handles = [line.strip() for line in file.readlines() if line.strip()]
+    handles = [line.strip() for line in file if line.strip()]
 
-# Prepare to write to result.csv
-with open('result.csv', 'w', newline='') as csvfile:
-    writer = csv.writer(csvfile)
-    writer.writerow(['handle', 'creator ID'])
+# Prepare results list
+results = []
 
-    for handle in handles:
-        # Remove leading '@' if present, as API expects handle without it
-        clean_handle = handle.lstrip('@')
+for handle in handles:
+    try:
+        # Make API request to get channel ID using forHandle
+        request = youtube.channels().list(
+            part='id',
+            forHandle=handle
+        )
+        response = request.execute()
         
-        try:
-            # Call the API to get channel ID using forHandle
-            response = youtube.channels().list(
-                part='id',
-                forHandle=clean_handle
-            ).execute()
-            
-            if 'items' in response and response['items']:
-                channel_id = response['items'][0]['id']
-                writer.writerow([handle, channel_id])
-            else:
-                writer.writerow([handle, 'Not Found'])
-        except HttpError as e:
-            writer.writerow([handle, f'Error: {e}'])
-        except Exception as e:
-            writer.writerow([handle, f'Unexpected Error: {str(e)}'])
+        if 'items' in response and len(response['items']) > 0:
+            channel_id = response['items'][0]['id']
+        else:
+            channel_id = 'Not found'
+    except HttpError as e:
+        channel_id = f'Error: {e.resp.status} - {e.reason}'
+    except Exception as e:
+        channel_id = f'Error: {str(e)}'
+    
+    results.append([handle, channel_id])
 
-print("Processing complete. Results saved to result.csv")
+# Write to result.txt
+with open('result.txt', 'w') as txtfile:
+    for handle, channel_id in results:
+        txtfile.write(f"- [{handle}]([{channel_id}])\n")
+
+print("Processing complete. Results saved to result.txt")
