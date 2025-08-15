@@ -11,7 +11,7 @@ API_KEY = config['settings']['api_key']
 youtube = build('youtube', 'v3', developerKey=API_KEY)
 
 # Read handles from handle.txt
-with open('handle.txt', 'r') as file:
+with open('handle.txt', 'r', encoding='utf-8') as file:
     handles = [line.strip() for line in file if line.strip()]
 
 # Prepare results list
@@ -38,8 +38,8 @@ for handle in handles:
     results.append([handle, channel_id])
 
 # Write to result.txt
-with open('result.txt', 'w') as txtfile:
+with open('result.txt', 'w', encoding='utf-8') as txtfile:
     for handle, channel_id in results:
-        txtfile.write(f"- [{handle}]([{channel_id}])\n")
+        txtfile.write(f"- {handle} ({channel_id})\n")
 
 print("Processing complete. Results saved to result.txt")
