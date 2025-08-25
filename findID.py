@@ -19,27 +19,31 @@ results = []
 
 for handle in handles:
     try:
-        # Make API request to get channel ID using forHandle
+        # Make API request to get channel ID and title using forHandle
         request = youtube.channels().list(
-            part='id',
+            part='id,snippet',
             forHandle=handle
         )
         response = request.execute()
         
         if 'items' in response and len(response['items']) > 0:
             channel_id = response['items'][0]['id']
+            channel_name = response['items'][0]['snippet']['title']
         else:
             channel_id = 'Not found'
+            channel_name = 'Not found'
     except HttpError as e:
         channel_id = f'Error: {e.resp.status} - {e.reason}'
+        channel_name = 'Error'
     except Exception as e:
         channel_id = f'Error: {str(e)}'
+        channel_name = 'Error'
     
-    results.append([handle, channel_id])
+    results.append([channel_name, handle, channel_id])
 
 # Write to result.txt
 with open('result.txt', 'w', encoding='utf-8') as txtfile:
-    for handle, channel_id in results:
-        txtfile.write(f"- {handle} ({channel_id})\n")
+    for channel_name, handle, channel_id in results:
+        txtfile.write(f"- {channel_name} @{handle} ({channel_id})\n")
 
 print("Processing complete. Results saved to result.txt")
